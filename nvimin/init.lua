@@ -1,0 +1,8 @@
+require("keymaps")
+require("functions")
+require("plugins")
+require("options")
+require("lsp")
+require("colorscheme")
+require("find")
+require("grep")

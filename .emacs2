@@ -1,0 +1,467 @@
+;; Minimal UI
+
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(setq auto-save-default nil)
+
+;; Packages initialize
+
+(require 'package)
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("gnu" . "https://elpa.gnu.org/packages/")))
+(package-initialize)
+
+(use-package colorful-mode
+  :ensure t
+  :hook (prog-mode . colorful-mode))
+
+;; ----------------------------
+;; use-package (required)
+;; ----------------------------
+
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(require 'use-package)
+
+;; ----------------------------
+;; Tree-sitter languages (ONE definition only)
+;; ----------------------------
+
+(setq treesit-language-source-alist
+      '((python "https://github.com/tree-sitter/tree-sitter-python" "v0.23.6")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "v0.23.1" "src")
+        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "v0.23.2" "typescript/src")
+        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "v0.23.2" "tsx/src")
+        (json "https://github.com/tree-sitter/tree-sitter-json")
+        (go "https://github.com/tree-sitter/tree-sitter-go")
+        (elixir "https://github.com/elixir-lang/tree-sitter-elixir" "v0.3.4" "src")
+        (heex "https://github.com/phoenixframework/tree-sitter-heex" "v0.6.0" "src")
+        (clojure "https://github.com/sogaiu/tree-sitter-clojure")))
+
+(add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.js\\'" . js-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.jsx\\'" . js-ts-mode))
+
+;; ripgrep
+
+(use-package deadgrep
+  :ensure t
+  :bind (("C-c g" . deadgrep)))
+
+;; ----------------------------
+;; Mode remapping (ONE block)
+;; ----------------------------
+
+(setq major-mode-remap-alist
+      '((python-mode . python-ts-mode)
+        (js-mode . js-ts-mode)
+        (javascript-mode . js-ts-mode)
+        (typescript-mode . typescript-ts-mode)
+        (tsx-mode . tsx-ts-mode)
+        (json-mode . json-ts-mode)
+        (css-mode . css-ts-mode)
+        (clojure-mode . clojure-ts-mode)
+        (elixir-mode . elixir-ts-mode)))
+
+;; No line highlight
+
+(global-hl-line-mode -1)
+
+;;(with-eval-after-load 'vertico
+;;  (define-key vertico-map (kbd "TAB") #'vertico-next)
+;;  (define-key vertico-map (kbd "<backtab>") #'vertico-previous))
+
+(use-package savehist
+  :init (savehist-mode))
+
+(setq completion-cycle-threshold 3)
+(setq tab-always-indent 'complete)
+
+;; file completion
+
+(use-package yasnippet
+  :ensure t
+  :config
+  (yas-global-mode 1))
+
+;; corfu
+
+(global-set-key (kbd "C-.") 'embark-act)
+
+;; Which-Key
+
+(use-package which-key
+  :init (which-key-mode)
+  :custom
+  (which-key-idle-delay 0.3)
+  (which-key-idle-secondary-delay 0.05)
+  (which-key-sort-order 'which-key-prefix-then-key-order)
+  (which-key-max-description-length 40)
+  (which-key-side-window-max-height 0.25))
+
+;; consult
+
+;; (use-package consult
+;;   :ensure t)
+
+;; (use-package vertico
+;;   :ensure t
+;;   :init (vertico-mode))
+
+;; (use-package orderless
+;;   :ensure t
+;;   :custom
+;;   (completion-styles '(orderless basic)))
+
+;; ;; Keep default file behavior
+;; (global-set-key (kbd "C-x C-f") #'find-file)
+
+;; ;; Add search on top
+;; (global-set-key (kbd "C-c f") #'consult-find)
+;; (global-set-key (kbd "C-c g") #'consult-ripgrep)
+
+;; (global-set-key (kbd "C-s") #'isearch-forward)
+;; (global-set-key (kbd "C-r") #'isearch-backward)
+
+(use-package affe
+  :ensure t
+  :bind (("C-c a" . affe-find)))
+
+(setq affe-preview-command
+      "batcat --style=numbers --color=always --line-range :200 {}")
+
+;; lsp
+
+(use-package vertico :ensure t :init (vertico-mode 1))
+(use-package marginalia :ensure t :init (marginalia-mode))
+(use-package corfu :ensure t :init (global-corfu-mode))
+(use-package embark :ensure t)
+
+(use-package lsp-mode
+  :ensure t
+  :hook ((python-ts-mode . lsp)
+         (js-ts-mode . lsp)
+         (typescript-ts-mode . lsp)))
+
+(add-hook 'js-ts-mode-hook #'lsp)
+(add-hook 'typescript-ts-mode-hook #'lsp)
+(add-hook 'csetqlojure-ts-mode-hook #'lsp)
+
+;; orderless
+
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic)))
+
+(setq completion-category-overrides
+      '((file (styles basic partial-completion orderless))))
+
+(setq orderless-matching-styles
+      '(orderless-prefixes orderless-regexp))
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("cb215d26a4968c315a674335657cc2eebbeb154ead6e206bb3fe6aa18245fcef"
+     "3e4a446762c6f4371ea34e4fdde9bad8cac0178fd5da801089c2540f38a41703"
+     "cb1f2c06ae381b505c9f2cf36ece1dd8e0a323d097ba3bbb19a842c3098c07f8"
+     "7bf34d114ec815e05a1ecb7f1acfd61ef453bfd27d12cc4c2babfa08ca1314da"
+     "bd17d0f6495c2626c493322ff37c64dc76ddb06c10dbadfead6a4f92775f00f3"
+     "c8863bf29722cf36c5d293ac723fe9698e16f778326d791516dd717951ea8cd6"
+     "f3a920b6e69474d4bbe28a851edc71cfc8e18cc4e1638dd8286867bf9e394752"
+     "4e44d61f7101a38a72dca3cb38945c577042e9b1ad9f2f10e40691ecab4f5a82"
+     "fa59949f43b3119f6f0934c3d396d19890c6e29594fc6a68d25eed93f42d0197"
+     "6e02542d0e2b714ddbb22bec535aeb02284fab056735a097a05b0ce0b40293ee"
+     "0c48956c74f4b20faac373000615d0fcd2c5d873bd5e9706b5368c424c999b3c"
+     "48f52eb07f68166d1a1f9d264d425ea4dd3375c671c4b84d82671b0a68b3fd8c"
+     "7a07344beaab36fb0ee8142e7878b0e044c3a34d4af6eca24f6a24b7ebb0e97c"
+     "e1f15fc0f63331fd6f5b51e211015d907ac11f95c61d73985c28c523507e2b9d"
+     "e9ab4ab924dd93d6f3eaeba6f430998a50b7a59dd235893ec32b2f9476ac4cdc"
+     "d47035ab9655ba28bf565fac7849a213ce9c1ee6f81994ee736cbe73d17f6106"
+     "e4948215e6a81d8e24d2c58bf8e08633711953925272f81b6d414cf6e5f2478f"
+     "bbfbbcfe9888e0e7813860594797a2eed4019f652a025c7d35bce9a8d2c7eb87"
+     "d82ee8a1322c555668d15dd42383b28021932e7aeef4b64a1b9e78d7a2259aee"
+     "154942c357df504832e170f9db54c6988559de1c8f551b7d5a58046733fc72ac"
+     "8497c8048217f62fe678bd6187fbe79d5309440a052d6ee2e40b5ccc9c61094e"
+     "5b10a8a1fe1fbad4132d04daaba34438deb1548ca3240e3b46555874dea79c04"
+     "d7026e5c85a383680da2b2e3d12907a82946b7c70fae00042179fd2d1e32bee0"
+     "892ff8f92ed0466522141d2bf4914b83e9245f1fbb650c343dd658424bfe2df5"
+     "118cfb9c6393b51bc9858966b3983acf73d491dfbeacc5ea3e0479b91b6ec0f4"
+     "8b22559664c0921365a4e5dc90e8bce53bafcefc5bb63dfb7efdde89473bc460"
+     "21c7c3785ef50ea0bb0923ab356551b530c883c7fe279f6eb494361878df37a8"
+     "33c8ce6d9cc1b200f35ca61fec7fdca49d1f0ce25a2ee321915a27e9dada6f3b"
+     "fb67f93c626dccfd225fc1c30ba534306e5e8beca1c59255e0c6dcd4ddd277d9"
+     "26d0a5e5106d3a3f6b0852d9da62596d08d5b6e2e93508b236dd034bde9caf00"
+     "4491e9906039e50264eaceb6e8c01fde2b94816e1c527ebc489f4707a51231d5"
+     "a8ee0833702b1031b36921cbc8355d5cc0b3dcbc2b880f8096eab1dd5343165c"
+     "8684088c88e6bcf8d8b48fad1dedb7d7cb3edbdb680263ec8eb14a5b15cd9928"
+     "6752e4455d5ab85d138b9adbef3bed4d6c290407476e2473170ed362c2ab0564"
+     "d254161bfaa1498ec5b70692dad87ba904090ee69ec2637c94efdaef7f24ec16"
+     "c04a92ceed5f3b1f25b4b96add743a7dd1b403aadb60877bc80f9e9a65a62b33"
+     "db7b45f4021cd7dc8fdef6c940ed3757d2a5ae9b7e1e4bcf9b478459a9c84bbc"
+     "7225620a61a8cb405b9b22fb72e9ba7b57457082f46b8b1e41fcf4a996367040"
+     "976f45d6f5bb5adc8619ea1754b75923286ed8429d644a1d05d52031455c5b95"
+     "2d95360da8bb607f2bc64a2232d1474f487de4c28c2a047e13e7e9f1c429efa0"
+     "bcc2003a4238243a5168a00b127b65722656739a763345efb7a64b4ad37892bd"
+     "ecae85e048675e92298aac04a75e81822bf391c2c95bd67f53ab64301c28b2c7"
+     "5fa47311c625718b34edb3bbe61a72f9b53547011ad608820fc7e7a19510c18c"
+     "4a1c3193d8b69e69e8845be37b38d04564fd80f027ad179978ade87c4def1ced"
+     "2cff0136173189db13cdef1742ccbc97b1e452b7cbfbd8ead4f39e55c9e4c2d4"
+     "370161aee54b82a3d684711fdb9b91932a51e9d97b5ed96b0373adca6734e0cd"
+     "7bdfdfb35d3cfebe91b09d06beb990ce123798fdffbe43d1e34a37495c618dea"
+     "f93accff88cd32a73f145d964a231b8c0a608b7adf9aa3b00eb811c97a27e451"
+     "9b38d2475621f6866fac62ee713335aed3e5a34686a5dbf07ea45392f44d655d"
+     "92248fc3dea04bf9330f9e936812bc7ebd83eb9793c16f8500f19b1f618b7c2d"
+     "0882c2a9fdf04dbe8b47e4ba58f45d10c4764d69726b5875844b6b41d37f7dd2"
+     "3f2a01ca86d1378937ed4a52c6dd53a96b2fe580f71d61798cc93d81d5e2140f"
+     "957a440f43746599d2f85e09514952b838fa75778a1821059d45f84cfcc7caff"
+     "158292e3eff41b626d9c6a7d0dcc67a030c416aa8f486943d67e21acadf8246e"
+     "808a92266a68f51f21f2132d2f900a257df8e74c2ad9158066c7d2e5192ef965"
+     "84581927169c3b4a7c57fd0f8cce8aa91823291e403bd577fde32b8c30800279"
+     "7d3d94ede53f6cabc164a8040cbc9d8ac0b62cf6bacb1ae972469c382dcb3888"
+     "a0074afc88f875c2d6905ca5bd39df1ca226e201fc2fd7338bac21df7d957b05"
+     "fc5c5ec472d1a97e99bf294efdae866827ff78692530038e4df7b6dfe633263d"
+     "52d752fece1da579b22790864669069e87afca9712728f5f9ac29d0fe95dbaaf"
+     "6120844d4395e1f189058f270cc084a0d1b75dfe83455831b37350a22b3d1176"
+     "6a95b0faf6cee6adfda34cdfadb2fed6f4157a1d49aabef8cc9b94c187d69a1d"
+     "4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d"
+     "720838034f1dd3b3da66f6bd4d053ee67c93a747b219d1c546c41c4e425daf93"
+     "ca1b398ceb1b61709197478dc7f705b8337a0a9631e399948e643520c5557382"
+     "a0163d99111c1e4810f78bcdb819d8c40067ce48c6ce00c642ec0a7e7c45f26a"
+     "b6760747b166ba414f6e41cf3c2e4c46fc681378540ef00273af8fbbed3fa0a0"
+     "6a01667129c89ae75a3abaa47c16784693675c0b2fbff1b0493721345df74a92"
+     "94b3f2782ec00a36f336b94fa15ca977dbc25dd2e3413f40bee3e9ed2a8a1317"
+     "99768190047342cd4a93fa9b60a9998130cdbffcb76d0f63b092c9853ac580f1"
+     "d3c0bb5bc4d1fbabd01f123774e4a6afe98502702ac7181ed6e7e33aa5098878"
+     default))
+ '(package-selected-packages nil)
+ '(package-vc-selected-packages
+   '((clojure-ts-mode :vc-backend Git :url
+		      "https://github.com/clojure-emacs/clojure-ts-mode"))))
+
+;; elixir
+
+(unless (package-installed-p 'elixir-mode)
+  (package-refresh-contents)
+  (package-install 'elixir-mode))
+
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+;; custom programs
+
+(defun dropprog ()
+  "Open the ~/Dropbox/prog/ directory. Optionally, open a subdirectory with completion."
+  (interactive)
+  (let* ((base-dir "~/Dropbox/prog/")
+         (subdirs (directory-files base-dir nil "^[^.]" t)) ;; Get all non-hidden files and directories
+         (subdir (completing-read "Subdirectory: " subdirs nil t)))
+    (dired (concat base-dir subdir))))
+
+(defun dropweb ()
+  "Open the ~/Dropbox/prog/ directory. Optionally, open a subdirectory with completion."
+  (interactive)
+  (let* ((base-dir "~/Dropbox/prog/web/")
+         (subdirs (directory-files base-dir nil "^[^.]" t)) ;; Get all non-hidden files and directories
+         (subdir (completing-read "Subdirectory: " subdirs nil t)))
+    (dired (concat base-dir subdir))))
+
+(defun dropdoc ()
+  "Open the ~/Dropbox/documents/various/ directory. Optionally, open a subdirectory with completion."
+  (interactive)
+  (let* ((base-dir "~/Dropbox/documents/various/")
+         (subdirs (directory-files base-dir nil "^[^.]" t)) ;; Get all non-hidden files and directories
+         (subdir (completing-read "Subdirectory: " subdirs nil t)))
+    (dired (concat base-dir subdir))))
+
+(defun cgrep3()
+  "Run grep to search for 'global-set-key' in ~/.emacs and display the results."
+  (interactive)
+  (with-output-to-temp-buffer "*Grep Output*"
+    (grep "grep --color=auto -nH 'global-set-key' ~/.emacs")))
+
+(defun copy-line-below()
+  "Copy the current line and insert it below."
+  (interactive)
+  (save-excursion
+    (move-beginning-of-line 1)
+    (kill-ring-save (point) (line-end-position))
+    (end-of-line)
+    (newline)
+  ;;  (forward-line 1)
+    (yank)))
+
+(defun copy-region-below (start end)
+  "Copy the selected region and paste it one line below."
+  (interactive "r")
+  (if (use-region-p)
+      (let ((region-text (buffer-substring-no-properties start end)))
+        (save-excursion
+          (goto-char end)
+          (forward-line 0)
+;;	  (end-of-line)
+;;	  (newline)
+          (insert region-text)))
+    (message "No region selected!")))
+
+(defun my-grep4 (directory pattern)
+  "Run ripgrep with clickable results in DIRECTORY."
+  (interactive
+   (list
+    (read-directory-name "Directory: " default-directory nil t)
+    (read-string "Pattern: ")))
+  (let ((default-directory (expand-file-name directory))
+        (compilation-environment '("TERM=dumb"))) ;; disable color escape codes
+    (compilation-start
+     (format "rg --line-number --no-heading --ignore-case %s ." (shell-quote-argument pattern))
+     'compilation-mode))) ;; or 'compilation-mode if you want a more generic view
+
+;; (defun rgc()
+;;   "Run grep with the given query and path."
+;;   (interactive)
+;;   (let ((command (format "grep --color=auto -nH --null -e %s %s" query path)))
+;;     (shell-command command)))
+
+;; load these at startup
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (find-file "~/.emacs")))
+
+(defun rgc(start end)
+  "Convert region to regex, allow editing in minibuffer, then search."
+  (interactive "r")
+  (if (use-region-p)
+      (let* ((text (buffer-substring-no-properties start end))
+             (regex (replace-regexp-in-string "[0-9]+" "\\\\d+" text))
+             (input (read-from-minibuffer "Regex search: " regex)))
+        
+        (when (not (string-empty-p input))
+          ;; save to search history
+          (add-to-history 'regexp-search-ring input)
+          ;; perform search
+          (goto-char (point-min))
+          (re-search-forward input nil t)))
+    
+    (message "No region selected")))
+
+;; custom keybingings
+
+;; -------------------------------------------------
+;; custom keymaps
+;; -------------------------------------------------
+
+(defvar term-map (make-sparse-keymap))
+(define-key term-map (kbd "t") 'eat)
+
+;; -------------------------------------------------
+;; code completion
+;; -------------------------------------------------
+
+(use-package eglot
+  :ensure t)
+
+;; -------------------------------------------------
+;; syntax highlighting
+;; -------------------------------------------------
+
+(use-package elixir-ts-mode
+  :mode "\\.ex\\'"
+  :mode "\\.exs\\'")
+
+(use-package clojure-ts-mode
+  :mode ("\\.clj\\'" "\\.cljs\\'" "\\.cljc\\'")
+  :init
+  (add-to-list 'auto-mode-alist '("\\.clj\\'" . clojure-ts-mode))
+  (add-to-list 'auto-mode-alist '("\\.cljs\\'" . clojure-ts-mode))
+  (add-to-list 'auto-mode-alist '("\\.cljc\\'" . clojure-ts-mode)))
+
+;; -------------------------------------------------
+;; Function Keys
+;; -------------------------------------------------
+
+(global-set-key [f1] 'save-buffer)
+(global-set-key [C-f1] 'crux-rename-file-and-buffer)
+(global-set-key [f2] 'other-window)
+(global-set-key [C-f2] 'emacs-index-search)
+(global-set-key [S-f2] 'grep)
+(global-set-key [f3] 'comment-region)
+(global-set-key [C-f3] 'uncomment-region)
+(global-set-key [f4] 'bookmark-set)
+(global-set-key [C-f4] 'bookmark-jump)
+(global-set-key [S-f4] 'list-bookmarks)
+(global-set-key [f5] 'my-grep4)
+(global-set-key [C-f5] 'filesearch)
+(global-set-key [S-f5] 'rgc)
+(global-set-key [f6] 'kill-buffer)
+(global-set-key [C-f6] 'kill-some-buffers)
+(global-set-key [S-f6] 'crux-kill-other-buffers)
+(global-set-key [f7] 'find-file)
+(global-set-key [C-f7] (lambda () (interactive) (load-file "~/.emacs")))
+(global-set-key [S-f7] (lambda () (interactive) (find-file "~/.emacs")))
+(global-set-key [f8] 'copy-to-register)
+(global-set-key [C-f8] #'cut-to-register)
+(global-set-key [S-f8] 'insert-register)
+(global-set-key [f9] 'undo)
+(global-set-key [C-f9] 'describe-key)
+(global-set-key [S-f9] 'describe-function)
+(global-set-key [f10] 'search-and-replace-current-dir)
+(global-set-key [S-f10] 'search-and-replace)
+(global-set-key [C-f10] 'customize-themes)
+(global-set-key [C-f11] 'text-scale-increase)
+(global-set-key [C-f12] 'text-scale-decrease)
+
+(define-key global-map (kbd "C-c t") term-map)
+
+(global-set-key (kbd "C-f") 'grep)
+(global-set-key (kbd "M-1") 'dropprog)
+;;(global-set-key (kbd "M-a") 'list-last-minibuffer-commands)
+(global-set-key (kbd "M-2") 'dropweb)
+(global-set-key (kbd "M-3") 'dropdoc)
+(global-set-key (kbd "M-s") 'cu-jump-to-function)
+(global-set-key (kbd "M-4") 'info)
+(global-set-key (kbd "M-5") 'cgrep3)
+(global-set-key (kbd "M-6") 'describe-bindings)
+(global-set-key (kbd "M-7") 'ielm)
+(global-set-key (kbd "M-8") 'copy-lines-below)
+(global-set-key (kbd "M-9") 'copy-region-below)
+(global-set-key (kbd "M-0") 'org-info)
+
+(global-set-key (kbd "M-o M-e") 'org-entities-help)
+(global-set-key (kbd "M-o M-i") 'toggle-input-method)
+(global-set-key (kbd "M-o M-s") 'set-input-method)
+(global-set-key (kbd "M-o M-d") 'describe-input-method)
+(global-set-key (kbd "M-o M-t") 'org-table-create-or-convert-from-region)
+(global-set-key (kbd "M-o M-l") 'find-library)
+(global-set-key (kbd "M-o M-n") 'Info-search)
+(global-set-key (kbd "M-o M-p") 'export-installed-packages-to-org)
+(global-set-key (kbd "M-o M-a") 'insert-org-html-export-block)
+(global-set-key (kbd "M-o M-b") 'org-bulletify-region)
+(global-set-key (kbd "M-o M-c") 'org-load-template)
+(global-set-key (kbd "M-o M-v") 'org-load-template-vue)
+(global-set-key (kbd "M-o M-w") 'alpinetemplate)
+(global-set-key (kbd "M-o M-h") 'my-org-export-to-custom-html)
+(global-set-key (kbd "M-o M-u") 'my-org-export-to-vue-html)
+
+;; load theme
+
+(add-to-list 'custom-theme-load-path
+             "~/Dropbox/prog/emacs/themes/")
+
+;; (load-theme 'base16-github-dark t)
+;; (load-theme 'custom-dark t)
+
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+(load-theme 'custom-dark t)

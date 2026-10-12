@@ -1,0 +1,492 @@
+;; -------------------------------------------------
+;; appearence
+;; -------------------------------------------------
+
+;; (menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(setq auto-save-default nil)
+
+;; -------------------------------------------------
+;; Load custom.el
+;; -------------------------------------------------
+
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(when (file-exists-p custom-file)
+  (load custom-file))
+
+;; -------------------------------------------------
+;; Package Setup
+;; -------------------------------------------------
+
+(require 'package)
+
+(setq package-archives
+      '(("melpa" . "https://melpa.org/packages/")
+        ("gnu"   . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+
+(unless package-archive-contents
+  (package-refresh-contents))
+
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+;; -------------------------------------------------
+;; 1. Vertico
+;; -------------------------------------------------
+
+(use-package vertico
+  :init (vertico-mode))
+
+;; (defun my/find-org-file ()
+;;   (interactive)
+;;   (let ((completion-ignored-extensions
+;;          (cl-remove-if (lambda (ext) (not (string= ext ".org")))
+;;                        completion-ignored-extensions)))
+;;     (call-interactively #'find-file)))
+
+;; (defun my/find-org-files ()
+;;   (interactive)
+;;   (find-file
+;;    (completing-read
+;;     "Org file: "
+;;     (directory-files-recursively "~/notes/" "\\.org$"))))
+
+(global-set-key (kbd "C-s") 'consult-line)
+(global-set-key (kbd "C-c g") 'consult-ripgrep)
+(global-set-key (kbd "C-x b") 'consult-buffer)
+
+(use-package savehist
+  :init
+  (savehist-mode))
+
+(setq vertico-cycle t)
+
+(use-package all-the-icons)
+(use-package all-the-icons-completion
+  :init
+  (all-the-icons-completion-mode))
+
+(with-eval-after-load 'vertico
+  (define-key vertico-map (kbd "TAB") #'vertico-next)
+  (define-key vertico-map (kbd "<tab>") #'vertico-next)
+  (define-key vertico-map (kbd "<backtab>") #'vertico-previous))
+
+;; -------------------------------------------------
+;; 2. Orderless
+;; -------------------------------------------------
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil))
+
+;; -------------------------------------------------
+;; 3. Marginalia
+;; -------------------------------------------------
+
+(use-package marginalia
+  :init (marginalia-mode))
+
+(setq marginalia-annotators
+      '(marginalia-annotators-heavy
+        marginalia-annotators-light
+        nil))
+
+(define-key minibuffer-local-map (kbd "M-A") #'marginalia-cycle)
+
+(setq marginalia-align 'right)
+
+(setq marginalia-max-relative-age 0)
+
+;; -------------------------------------------------
+;; 4. Consult
+;; -------------------------------------------------
+
+(use-package consult)
+
+;; -------------------------------------------------
+;; 5. Embark
+;; -------------------------------------------------
+
+(use-package embark
+  :after which-key
+  :config
+  (setq embark-action-indicator
+        (lambda (map)
+          (which-key--show-keymap "Embark" map nil nil 'no-paging)))
+  (setq embark-become-indicator embark-action-indicator))
+
+
+(use-package embark-consult
+  :after (embark consult))
+
+(use-package embark
+  :bind
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings)) ;; show all possible actions
+  :init
+  ;; nicer quit behavior
+  (setq prefix-help-command #'embark-prefix-help-command))
+
+  (setq embark-quit-after-action t)
+
+(setq embark-cycle-key "<tab>") ;; cycle actions with tab
+
+;; -------------------------------------------------
+;; 6. Corfu
+;; -------------------------------------------------
+
+(use-package corfu
+  :init
+  (global-corfu-mode)
+
+  :custom
+  (corfu-auto t)
+  (corfu-cycle t)
+
+  :bind
+  (:map corfu-map
+        ("<tab>" . corfu-next)
+        ("<S-tab>" . corfu-previous)
+        ("RET" . corfu-insert)))
+
+;; -------------------------------------------------
+;; 7. Which-Key
+;; -------------------------------------------------
+
+(use-package which-key
+  :init (which-key-mode))
+
+(use-package which-key
+  :init (which-key-mode)
+  :custom
+  (which-key-idle-delay 0.3)
+  (which-key-idle-secondary-delay 0.05)
+  (which-key-sort-order 'which-key-prefix-then-key-order)
+  (which-key-max-description-length 40)
+  (which-key-side-window-max-height 0.25))
+
+;; -------------------------------------------------
+;; 8. Magit
+;; -------------------------------------------------
+
+(use-package magit)
+
+;; -------------------------------------------------
+;; 9. Projectile
+;; -------------------------------------------------
+
+(use-package projectile
+  :init (projectile-mode)
+  :bind-keymap
+  ("C-c p" . projectile-command-map))
+
+;; -------------------------------------------------
+;; 10. Doom Themes
+;; -------------------------------------------------
+
+(use-package doom-themes
+  :config
+  (load-theme 'doom-one t))
+
+;; ===============================
+;; Treesitter
+;; ===============================
+
+(require 'treesit)
+
+(setq treesit-language-source-alist
+      '((tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
+        (python "https://github.com/tree-sitter/tree-sitter-python")
+        (bash "https://github.com/tree-sitter/tree-sitter-bash")
+        (html "https://github.com/tree-sitter/tree-sitter-html")
+        (css "https://github.com/tree-sitter/tree-sitter-css")))
+
+;; install parser automatically if missing
+
+(dolist (lang '(tsx typescript javascript python bash html css))
+  (unless (treesit-language-available-p lang)
+    (treesit-install-language-grammar lang)))
+
+;; associate .tsx files
+
+(add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))
+
+;; ===============================
+;; LSP
+;; ===============================
+
+(use-package lsp-mode
+  :ensure t
+  :hook ((tsx-ts-mode . lsp)
+         (typescript-ts-mode . lsp)
+         (js-ts-mode . lsp))
+  :commands lsp)
+
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode)
+
+;; ===============================
+;; Buffer cycling with Tab
+;; ===============================
+
+(defun my/next-buffer ()
+  "Switch to next buffer."
+  (interactive)
+  (unless (minibufferp)
+    (next-buffer)
+    (while (string-match-p "^\\*" (buffer-name))
+      (next-buffer))))
+
+(defun my/previous-buffer ()
+  "Switch to previous buffer."
+  (interactive)
+  (unless (minibufferp)
+    (previous-buffer)
+    (while (string-match-p "^\\*" (buffer-name))
+      (previous-buffer))))
+
+(defun my/tab-buffer-cycle ()
+  "Use Tab to cycle buffers outside minibuffer."
+  (local-set-key (kbd "<tab>") #'my/next-buffer)
+  (local-set-key (kbd "<backtab>") #'my/previous-buffer))
+
+(add-hook 'prog-mode-hook #'my/tab-buffer-cycle)
+(add-hook 'text-mode-hook #'my/tab-buffer-cycle)
+
+;; (defun my/helm-org-files ()
+;;   (interactive)
+;;   (helm :sources
+;;         (helm-build-sync-source "Org files"
+;;           :candidates (directory-files-recursively "~/notes/" "\\.org$")
+;;           :fuzzy-match t)
+;;         :buffer "*helm org*"))
+
+;; (setq helm-boring-file-regexp-list
+;;       '("\\.git\\'"
+;;         "\\.o\\'"
+;;         "\\.pyc\\'"
+;;         "node_modules"))
+
+;; -------------------------------------------------
+;; hooks
+;; -------------------------------------------------
+
+(add-hook 'prog-mode-hook
+          (lambda ()
+            (setq-local completion-at-point-functions
+                        '(lsp-completion-at-point))))
+
+
+;; -------------------------------------------------
+;; custom programs
+;; -------------------------------------------------
+
+(add-to-list 'custom-theme-load-path "~/Dropbox/prog/emacs/themes/")
+
+(global-set-key
+ (kbd "C-d")
+ (lambda ()
+   (interactive)
+   (execute-kbd-macro (kbd "C-s def RET"))))
+
+(defvar my-themes
+  '(modus-operandi-deuteranopia
+    modus-vivendi
+    doom-dracula
+    doom-one)
+  "List of themes to cycle through.")
+
+(defun my-grep4 (directory pattern)
+  "Run ripgrep with clickable results in DIRECTORY."
+  (interactive
+   (list
+    (read-directory-name "Directory: " default-directory nil t)
+    (read-string "Pattern: ")))
+  (let ((default-directory (expand-file-name directory))
+        (compilation-environment '("TERM=dumb"))) ;; disable color escape codes
+    (compilation-start
+     (format "rg --line-number --no-heading --ignore-case %s ." (shell-quote-argument pattern))
+     'compilation-mode))) ;; or 'compilation-mode if you want a more generic view
+
+(defun filesearch (dir pattern)
+  "Recursively search for files matching PATTERN (with wildcards, case-insensitive) starting from DIR.
+Example usage: M-x my/find-files-insensitive"
+  (interactive
+   (list
+    (read-directory-name "Directory: " default-directory)
+    (read-string "Filename pattern (e.g. *.el): ")))
+  (let ((cmd (format "find %s -iname '%s' -print"
+                     (shell-quote-argument dir)
+                     pattern)))
+    (find-dired dir (concat "-iname \"" pattern "\""))))
+
+(defun dropprog ()
+  "Open the ~/Dropbox/prog/ directory. Optionally, open a subdirectory with completion."
+  (interactive)
+  (let* ((base-dir "~/Dropbox/prog/")
+         (subdirs (directory-files base-dir nil "^[^.]" t)) ;; Get all non-hidden files and directories
+         (subdir (completing-read "Subdirectory: " subdirs nil t)))
+    (dired (concat base-dir subdir))))
+
+(defun dropweb ()
+  "Open the ~/Dropbox/prog/ directory. Optionally, open a subdirectory with completion."
+  (interactive)
+  (let* ((base-dir "~/Dropbox/prog/web/")
+         (subdirs (directory-files base-dir nil "^[^.]" t)) ;; Get all non-hidden files and directories
+         (subdir (completing-read "Subdirectory: " subdirs nil t)))
+    (dired (concat base-dir subdir))))
+
+(defun dropdoc ()
+  "Open the ~/Dropbox/documents/various/ directory. Optionally, open a subdirectory with completion."
+  (interactive)
+  (let* ((base-dir "~/Dropbox/documents/various/")
+         (subdirs (directory-files base-dir nil "^[^.]" t)) ;; Get all non-hidden files and directories
+         (subdir (completing-read "Subdirectory: " subdirs nil t)))
+    (dired (concat base-dir subdir))))
+
+
+;; -------------------------------------------------
+;; Prefix Keymaps
+;; -------------------------------------------------
+
+(defvar jf-emacs (make-sparse-keymap))
+(defvar vuejs-map (make-sparse-keymap))
+(defvar ha-map (make-sparse-keymap))
+(defvar term-map (make-sparse-keymap))
+;;(defvar html-map (make-sparse-keymap))
+
+(define-key global-map (kbd "C-c e") jf-emacs)
+(define-key global-map (kbd "C-c v") vuejs-map)
+(define-key global-map (kbd "C-c f") ha-map)
+(define-key global-map (kbd "C-c t") term-map)
+;;(define-key global-map (kbd "C-c h") html-map)
+
+;; -------------------------------------------------
+;; Main Keybindings
+;; -------------------------------------------------
+
+(global-set-key (kbd "C-p") 'copy-line-below)
+
+(global-set-key (kbd "M-<f1>") 'copy-word-below)
+(global-set-key (kbd "M-<f2>") 'rwebmode)
+(global-set-key (kbd "<M-S-f2>") 'web-mode-element-close)
+(global-set-key (kbd "<M-f3>") 'selecttemplates)
+(global-set-key (kbd "<M-S-f3>") 'list-colors-display)
+(global-set-key (kbd "<M-f4>") 'listkeybinds)
+(global-set-key (kbd "<M-S-f4>") 'killdirs)
+(global-set-key (kbd "<M-f5>") 'insert-vue-sfc-skeleton)
+(global-set-key (kbd "<M-f6>") 'eval-last-sexp)
+(global-set-key (kbd "<M-S-f7>") 'ctimedate)
+
+;; -------------------------------------------------
+;; Prefix Maps
+;; -------------------------------------------------
+
+(define-key jf-emacs (kbd "b") 'my-bookmark-files-by-extension)
+(define-key jf-emacs (kbd "d") 'my-display-color-sequence)
+(define-key jf-emacs (kbd "f") 'search-files-by-regex)
+(define-key jf-emacs (kbd "c") 'show-custom-global-keys)
+
+(define-key vuejs-map (kbd "t") 'load-vuetemplate)
+
+(define-key ha-map (kbd "b") 'get-haskell-scratch)
+(define-key ha-map (kbd "s") 'haskell-send-region-to-vterm)
+
+(define-key term-map (kbd "t") 'eat)
+
+;; -------------------------------------------------
+;; Alt Bindings
+;; -------------------------------------------------
+
+(global-set-key (kbd "C-f") 'grep)
+(global-set-key (kbd "M-1") 'dropprog)
+;;(global-set-key (kbd "M-a") 'list-last-minibuffer-commands)
+(global-set-key (kbd "M-2") 'dropweb)
+(global-set-key (kbd "M-3") 'dropdoc)
+(global-set-key (kbd "M-s") 'cu-jump-to-function)
+(global-set-key (kbd "M-4") 'info)
+(global-set-key (kbd "M-5") 'cgrep3)
+(global-set-key (kbd "M-6") 'describe-bindings)
+(global-set-key (kbd "M-7") 'ielm)
+(global-set-key (kbd "M-8") 'copy-lines-below)
+(global-set-key (kbd "M-9") 'copy-region-below)
+(global-set-key (kbd "M-0") 'org-info)
+
+(global-set-key (kbd "M-o M-e") 'org-entities-help)
+(global-set-key (kbd "M-o M-i") 'toggle-input-method)
+(global-set-key (kbd "M-o M-s") 'set-input-method)
+(global-set-key (kbd "M-o M-d") 'describe-input-method)
+(global-set-key (kbd "M-o M-t") 'org-table-create-or-convert-from-region)
+(global-set-key (kbd "M-o M-l") 'find-library)
+(global-set-key (kbd "M-o M-n") 'Info-search)
+(global-set-key (kbd "M-o M-p") 'export-installed-packages-to-org)
+(global-set-key (kbd "M-o M-a") 'insert-org-html-export-block)
+(global-set-key (kbd "M-o M-b") 'org-bulletify-region)
+(global-set-key (kbd "M-o M-c") 'org-load-template)
+(global-set-key (kbd "M-o M-v") 'org-load-template-vue)
+(global-set-key (kbd "M-o M-w") 'alpinetemplate)
+(global-set-key (kbd "M-o M-h") 'my-org-export-to-custom-html)
+(global-set-key (kbd "M-o M-u") 'my-org-export-to-vue-html)
+
+(global-set-key (kbd "C-c r")
+                (lambda ()
+                  (interactive)
+                  (set-input-method "russian-computer")))
+
+(global-set-key (kbd "C-c C-r") 'elixir-repl)
+(global-set-key (kbd "C-c C-c C-t") 'alpinetemplate)
+
+;; -------------------------------------------------
+;; Function Keys
+;; -------------------------------------------------
+
+(global-set-key [f1] 'save-buffer)
+(global-set-key [C-f1] 'crux-rename-file-and-buffer)
+(global-set-key [f2] 'other-window)
+(global-set-key [C-f2] 'emacs-index-search)
+(global-set-key [S-f2] 'grep)
+(global-set-key [f3] 'comment-region)
+(global-set-key [C-f3] 'uncomment-region)
+(global-set-key [f4] 'bookmark-set)
+(global-set-key [C-f4] 'bookmark-jump)
+(global-set-key [S-f4] 'list-bookmarks)
+(global-set-key [f5] 'my-grep4)
+(global-set-key [C-f5] 'filesearch)
+(global-set-key [S-f5] 'rgc)
+(global-set-key [f6] 'kill-buffer)
+(global-set-key [C-f6] 'kill-some-buffers)
+(global-set-key [S-f6] 'crux-kill-other-buffers)
+(global-set-key [f7] 'find-file)
+(global-set-key [C-f7] (lambda () (interactive) (load-file "~/.emacs")))
+(global-set-key [S-f7] (lambda () (interactive) (find-file "~/.emacs")))
+(global-set-key [f8] 'copy-to-register)
+(global-set-key [C-f8] #'cut-to-register)
+(global-set-key [S-f8] 'insert-register)
+(global-set-key [f9] 'undo)
+(global-set-key [C-f9] 'describe-key)
+(global-set-key [S-f9] 'describe-function)
+(global-set-key [f10] 'search-and-replace-current-dir)
+(global-set-key [S-f10] 'search-and-replace)
+(global-set-key [C-f10] 'customize-themes)
+(global-set-key [C-f11] 'text-scale-increase)
+(global-set-key [C-f12] 'text-scale-decrease)
+
+;; (use-package base16-theme
+;;   :ensure t
+;;  :config
+;;  (load-theme 'base16-github-dark t))
+
+
+;; (load-theme 'custom-dark t)
+(load-theme 'base16-github-dark t)

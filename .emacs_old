@@ -1,0 +1,851 @@
+;; ____________________________________________________________________________
+;; Aquamacs custom-file warning:
+;; Warning: After loading this .emacs file, Aquamacs will also load
+;; customizations from `custom-file' (customizations.el). Any settings there
+;; will override those made here.
+;; Consider moving your startup settings to the Preferences.el file, which
+;; is loaded after `custom-file':
+;; ~/Library/Preferences/Aquamacs Emacs/Preferences
+;; _____________________________________________________________________________
+
+;; Added by Package.el.  This must come before configurations of
+;; installed packages.  Don't delete this line.  If you don't want it,
+;; just comment it out by adding a semicolon to the start of the line.
+;; You may delete these explanatory comments.
+;; (package-initialize)
+
+(setq debug-on-error t)
+
+(require 'package)
+
+;; (global-tree-sitter-mode -1)
+
+(setq treesit-language-source-alist
+      '((python     "https://github.com/tree-sitter/tree-sitter-python")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
+	(c "https://github.com/tree-sitter/tree-sitter-c")
+	(lisp "https://github.com/tree-sitter/tree-sitter-lisp")
+        (haskell    "https://github.com/tree-sitter/tree-sitter-haskell")))
+
+;;(setq major-mode-remap-alist
+;;      '((python-mode . python-ts-mode)))
+
+(add-to-list 'Info-directory-list "/usr/share/info")
+
+(add-hook 'emacs-startup-hook #'listkeybinds-auto)
+
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+
+;; Add MELPA repository to the package archives
+(add-to-list 'package-archives' ("melpa" . "https://melpa.org/packages/") t)
+
+(add-hook 'emacs-startup-hook (lambda () (find-file "~/Dropbox/prog/emacs/orgdocs/various.org")))
+
+(add-to-list 'load-path "~/Dropbox/prog/emacs/custom")
+
+;; Load web-mode when opening .html or .vue files
+;; add-to-list add functions to a list to activate when called
+(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.svelte\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.heex\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.lean\\'" . haskell-mode))
+(add-to-list 'auto-mode-alist '("\\.el\\'" . erlang-mode))
+(add-to-list 'auto-mode-alist '("\\.ex\\'" . elixir-mode))
+(add-to-list 'auto-mode-alist '("\\.rkt\\'" . racket-mode))
+
+(require 'semel)
+(require 'scope)
+
+(add-hook 'emacs-lisp-mode-hook #'semel-mode)
+(add-hook 'emacs-lisp-mode-hook #'cursor-sensor-mode)
+
+(add-hook 'web-mode-hook (lambda ()
+            (message "Web mode activated!")
+            (setq web-mode-markup-indent-offset 2)
+            (setq web-mode-code-indent-offset 2)))
+
+;;(add-hook 'emacs-lisp-mode-hook 'sm-greek-lambda)
+
+(with-eval-after-load 'compile
+  (when (facep 'compilation-info)
+    (set-face-attribute 'compilation-info nil
+                        :foreground "cyan"
+                        :weight 'bold))
+
+  (when (facep 'compilation-line-number)
+    (set-face-attribute 'compilation-line-number nil
+                        :foreground "cyan")))
+
+;; mini-posframe config
+
+(use-package mini-posframe
+  :load-path "~/.emacs.d/lisp/"
+  :custom
+  (mini-posframe-position 'top-right)
+  (mini-posframe-font-size 1)
+  (mini-posframe-width 75)
+  :config
+  (custom-set-faces
+   '(mini-posframe
+     ((t (:background "#8b2323" :foreground "#f8f8f2" :box (:line-width 2 :color "#8b2323"))))))
+  (mini-posframe-mode 1))
+
+;; mini-posframe ends
+
+(defun my-grep4 (directory pattern)
+  "Run ripgrep with clickable results in DIRECTORY."
+  (interactive
+   (list
+    (read-directory-name "Directory: " default-directory nil t)
+    (read-string "Pattern: ")))
+  (let ((default-directory (expand-file-name directory))
+        (compilation-environment '("TERM=dumb"))) ;; disable color escape codes
+    (compilation-start
+     (format "rg --line-number --no-heading --ignore-case %s ." (shell-quote-argument pattern))
+     'compilation-mode))) ;; or 'compilation-mode if you want a more generic view
+
+(defun my-grep6 (dir pattern)
+  "Run a case-insensitive grep in DIR for PATTERN using find-grep-dired."
+  (interactive
+   (list
+    (read-directory-name "Dir: ")
+    (read-string "Pattern: ")))
+   (let ((search-cmd
+       (format "find . \\( -type f -exec grep -qi -e %s {} \\; \\) -ls"
+               (shell-quote-argument pattern))))
+    (find-grep-dired dir search-cmd)))
+
+(use-package haskell-mode
+  :ensure t
+  :config
+  (setq haskell-hoogle-command nil))
+
+(use-package lsp-mode
+  :ensure t
+  :hook (lean4-mode . lsp)
+  :commands lsp)
+
+(use-package deadgrep
+  :ensure t
+  :config
+  (setq deadgrep-case 'ignore))
+
+;;(require 'haskell-hoogloe)
+
+(use-package tuareg
+  :mode ("\\.ml\\'" . tuareg-mode))
+
+(use-package utop
+  :ensure t
+  :hook (tuareg-mode . utop-minor-mode)
+  :config
+  (setq utop-command "opam exec -- utop -emacs"))
+
+(use-package ripgrep
+  :ensure t)
+
+(require 'utop)
+(require 'tuareg)
+
+(defun my-kill-buffer-and-window ()
+  "Kill the current buffer and close its window."
+  (interactive)
+  (kill-buffer-and-window))
+
+(with-eval-after-load 'special-mode
+  (define-key special-mode-map (kbd "Q") #'my-kill-buffer-and-window))
+
+;; Enable utop in OCaml files
+(add-hook 'tuareg-mode-hook #'utop-minor-mode)
+
+;; Set utop to run inside opam environment
+(setq utop-command "opam exec -- utop -emacs")
+
+(set-face-foreground 'compilation-info "cyan") ; or "blue", etc.
+
+(global-set-key [remap dabbrev-expand] 'hippie-expand)
+
+;; Set a separate file for customizations
+(setq custom-file (expand-file-name "~/custom.el"))
+
+;; Load the customizations file if it exists
+(when (file-exists-p custom-file)
+  (load custom-file))
+
+(get-buffer-create "*misc*")
+
+;; corfu setup
+
+(use-package corfu
+  :ensure t
+  :custom
+  (corfu-auto t)
+  (corfu-quit-no-match t)
+  (corfu-cycle t)
+  :init
+  (global-corfu-mode)
+  :config
+  (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer))
+
+  (defun my/org-mode-setup ()
+  "Enable Corfu completion in Org mode."
+  (setq-local completion-at-point-functions
+              (list
+               (cape-super-capf
+                #'org-complete #'cape-dabbrev #'cape-file))))
+
+(add-hook 'prog-mode-hook
+          (lambda ()
+            (imenu-add-menubar-index)
+            (setq imenu-auto-rescan t)))
+
+
+;; kind setup
+
+(use-package kind-icon
+  :ensure t
+  :after corfu
+  :custom (kind-icon-default-face 'corfu-default)
+  :config (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+;; ordeless setup
+
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles partial-completion)))))
+
+;; dired+ config 
+
+;; ----------------------------
+;; Dired+ Setup
+;; ----------------------------
+
+;; Add local lisp directory to load-path
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+
+;; Load Dired+ if present
+(when (file-exists-p "~/.emacs.d/lisp/dired+.el")
+  (require 'dired+))
+
+;; Core Dired settings
+(setq dired-listing-switches "-alhv --group-directories-first") ;; directories first, human-readable
+(setq diredp-hide-details-initially-flag nil)                   ;; show details
+(setq diredp-hide-details-propagate-flag nil)
+(setq diredp-toggle-find-file-reuse-dir t)                      ;; reuse same buffer
+(setq diredp-save-dired-state-mode t)
+(setq diredp-count-entries-recursive t)
+(setq diredp-list-file-sizes t)
+(setq diredp-human-readable-sizes-flag t)
+(setq diredp-mark-region-flag t)
+
+;; ----------------------------
+;; Faces / Colors
+;; ----------------------------
+(when (facep 'diredp-file-suffix)
+  (set-face-attribute 'diredp-file-suffix nil :foreground "#8be9fd"))
+(when (facep 'diredp-dir-heading)
+  (set-face-attribute 'diredp-dir-heading nil :foreground "#ff79c6" :weight 'bold))
+(when (facep 'diredp-file-name)
+  (set-face-attribute 'diredp-file-name nil :foreground "#50fa7b"))
+(when (facep 'diredp-symlink)
+  (set-face-attribute 'diredp-symlink nil :foreground "#f1fa8c"))
+
+;; Highlight autofiles if function exists
+(when (fboundp 'diredp-highlight-autofiles-mode)
+  (diredp-highlight-autofiles-mode 1))
+
+;; ----------------------------
+;; Keybindings
+;; ----------------------------
+(with-eval-after-load 'dired
+  ;; Quick navigation & operations
+  (define-key dired-mode-map (kbd "TAB") 'dired-hide-subdir)
+  (when (fboundp 'diredp-up-directory-reuse-dir-buffer)
+    (define-key dired-mode-map (kbd "M-b") 'diredp-up-directory-reuse-dir-buffer))
+  (when (fboundp 'diredp-next-subdir)
+    (define-key dired-mode-map (kbd "M-f") 'diredp-next-subdir))
+  (when (fboundp 'diredp-toggle-find-file-reuse-dir)
+    (define-key dired-mode-map (kbd "a") 'diredp-toggle-find-file-reuse-dir))
+  (when (fboundp 'diredp-toggle-sort-by-size)
+    (define-key dired-mode-map (kbd "s") 'diredp-toggle-sort-by-size))
+
+  ;; Directory shortcut prefix map
+  (define-prefix-command 'my/dired-shortcut-map)
+  (define-key dired-mode-map (kbd "p") 'my/dired-shortcut-map)
+
+  ;; Directory shortcuts
+  (define-key my/dired-shortcut-map (kbd "h")
+    (lambda () (interactive) (dired "~/")))
+  (define-key my/dired-shortcut-map (kbd "d")
+    (lambda () (interactive) (dired "~/Dropbox/")))
+  (define-key my/dired-shortcut-map (kbd "p")
+    (lambda () (interactive) (dired "~/Dropbox/prog/")))
+  (define-key my/dired-shortcut-map (kbd "w")
+    (lambda () (interactive) (dired "~/Dropbox/prog/web/")))
+  (define-key my/dired-shortcut-map (kbd "e")
+    (lambda () (interactive) (dired "~/.emacs.d/")))
+  (define-key my/dired-shortcut-map (kbd "c")
+    (lambda () (interactive) (dired "~/.config/"))))
+
+;; ----------------------------
+;; Optional Enhancements
+;; ----------------------------
+;; DiredFL for consistent colorization
+(use-package diredfl
+  :ensure t
+  :hook (dired-mode . diredfl-mode)
+  :config
+  (diredfl-global-mode 1))
+
+;; All-the-icons-dired for nice icons (requires fonts installed)
+(use-package all-the-icons-dired
+  :ensure t
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+;; Highlight current line
+(add-hook 'dired-mode-hook #'hl-line-mode)
+
+;; Reapply colors & modes after reading a directory
+(add-hook 'dired-after-readin-hook
+          (lambda ()
+            (when (derived-mode-p 'dired-mode)
+              (hl-line-mode 1)
+              (when (fboundp 'diredfl-mode) (diredfl-mode 1))
+              (when (fboundp 'all-the-icons-dired-mode) (all-the-icons-dired-mode 1)))))
+
+;; dired+ config ends
+
+(use-package neotree
+  :bind ([f12] . neotree-toggle))
+
+;;(add-hook 'org-mode-hook #'my/org-mode-setup)
+
+(add-hook 'org-mode-hook (lambda () (setq-local completion-at-point-functions nil)))
+
+(add-hook 'emacs-startup-hook #'show-dired-shortcuts)
+
+;; Enable Corfu in minibuffer completion
+(defun corfu-enable-in-minibuffer ()
+  "Enable Corfu completion in the minibuffer."
+  (when (or (bound-and-true-p completion-in-region-mode) ;; Ensure it's active only during completion
+            (minibufferp))
+    (corfu-mode 1)))
+
+(add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer)
+
+;; Optionally bind `TAB` for Corfu navigation
+(with-eval-after-load 'corfu
+  (define-key corfu-map (kbd "TAB") #'corfu-next) ;; Navigate to the next candidate
+  (define-key corfu-map (kbd "<backtab>") #'corfu-previous)) ;; Navigate to the previous candidate
+
+(setq tab-always-indent 'complete) ;; Make `TAB` complete or indent
+
+(setq corfu-auto-prefix 2         ;; Show suggestions after 2 characters
+      corfu-auto-delay 0.1        ;; Delay before showing suggestions
+      corfu-min-width 20          ;; Minimum popup width
+      corfu-max-width 80          ;; Maximum popup width
+      corfu-count 10              ;; Maximum number of candidates
+      corfu-scroll-margin 2)      ;; Margin for scrolling in the popup
+
+(setq completion-styles '(orderless substring basic)
+      completion-category-defaults nil
+      completion-category-overrides '((file (styles basic partial-completion))))
+
+(add-hook 'haskell-mode-hook 'corfu-mode)
+
+;; corfu end setup
+
+;; cape setup
+
+;; Enable Corfu completion UI
+;; See the Corfu README for more configuration tips.
+
+;; Add extensions
+(use-package cape
+  ;; Bind prefix keymap providing all Cape commands under a mnemonic key.
+  ;; Press C-c p ? to for help.
+  :bind ("M-p" . cape-prefix-map) ;; Alternative keys: M-p, M-+, ...
+  ;; Alternatively bind Cape commands individually.
+  ;; :bind (("C-c p d" . cape-dabbrev)
+  ;;        ("C-c p h" . cape-history)
+  ;;        ("C-c p f" . cape-file)
+  ;;        ...)
+  :init
+  ;; (add-to-list 'completion-at-point-functions #'cape-file)
+  ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  ;; (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block)
+  ;; (add-hook 'completion-at-point-functions #'cape-history)
+  ;; ...
+  )
+
+(add-hook 'minibuffer-setup-hook
+          (lambda ()
+            (setq-local completion-at-point-functions
+                        (remove #'cape-dabbrev completion-at-point-functions))))
+
+
+(setq calendar-week-start-day 1         ;; Week starts on Monday (ISO 8601)
+      calendar-intermonth-text
+      '(propertize
+        (format "%2d"
+                (car
+                 (calendar-iso-from-absolute
+                  (calendar-absolute-from-gregorian (list month day year)))))
+        'font-lock-face 'font-lock-function-name-face))
+
+;; cape end setup
+
+(fset 'yes-or-no-p 'y-or-n-p)
+
+;; org setup
+
+(defun my-org-mode-font-setup ()
+  "Set a custom font for Org mode."
+  (face-remap-add-relative 'default :family "Fira Code" :height 140)) ;; Replace "Fira Code" with your font
+
+(add-hook 'org-mode-hook 'my-org-mode-font-setup)
+
+(add-hook 'org-mode-hook
+          (lambda ()
+            (local-set-key (kbd "M-/") (lambda () (interactive) (org-cycle)))))
+
+(defun export-installed-packages-to-org ()
+  "Export a list of installed packages to an Org buffer."
+  (interactive)
+  (with-current-buffer (get-buffer-create "*Installed Packages*")
+    (erase-buffer)
+    (insert "#+TITLE: Installed Packages\n\n")
+    (insert "* Package List\n")
+    (dolist (pkg package-alist)
+      (let ((pkg-name (symbol-name (car pkg))))
+        (insert (format "- %s\n" pkg-name))))
+    (org-mode)
+    (write-file "~/Dropbox/prog/emacs/orgdocs/installed-packages.org")
+    (message "Package list exported to ~/Dropbox/prog/emacs/orgdocs/installed-packages.org")))
+
+(defun install-packages-from-org-file (file-path)
+  "Install packages listed in an Org file at FILE-PATH."
+  (interactive "fSelect Org file: ")
+  (require 'package)
+  (unless package-archive-contents
+    (package-refresh-contents))
+  (with-temp-buffer
+    (insert-file-contents file-path)
+    (goto-char (point-min))
+    (let (package-list)
+      ;; Extract package names from the list
+      (while (re-search-forward "^- \\(.*\\)$" nil t)
+        (push (intern (match-string 1)) package-list))
+      ;; Install missing packages
+      (dolist (pkg package-list)
+        (unless (package-installed-p pkg)
+          (package-install pkg)))
+      (message "Installation completed for listed packages."))))
+
+(with-eval-after-load 'org
+  (set-face-attribute 'org-level-1 nil
+                      :foreground "#b3530e"
+                      :weight 'bold
+                      :height 1.3)
+  (set-face-attribute 'org-level-2 nil
+                      :foreground "#45e0f5"
+                      :weight 'bold
+                      :height 1.2)
+  (set-face-attribute 'org-level-3 nil
+                      :foreground "#51afef"
+                      :weight 'bold))
+
+(set-face-attribute 'default nil
+                    :background "#1e222a")
+
+;; org setup end
+
+;; elixir setup
+
+(defun run-elixir-code (start end)
+  "Execute the selected Elixir code from START to END."
+  (interactive "r")
+  (let ((code (buffer-substring-no-properties start end)))
+    (shell-command (concat "elixir -e \"" code "\""))))
+
+(defun run-elixir-buffer ()
+  "Execute the entire Elixir buffer."
+  (interactive)
+  (shell-command (concat "elixir " (buffer-file-name))))
+
+(defun elixir-repl ()
+  "Launch IEx (Interactive Elixir Shell)."
+  (interactive)
+  (ansi-term "iex"))
+
+;; end elixir setup
+
+;; marginalia setup
+
+(use-package marginalia
+  :ensure t
+  :config
+  :bind (:map minibuffer-local-map
+              ("M-A" . marginalia-cycle))
+  :init
+
+  (marginalia-mode))
+
+(use-package rainbow-mode
+  :ensure t
+  :hook ((prog-mode . rainbow-mode)
+         (css-mode . rainbow-mode)
+         (emacs-lisp-mode . rainbow-mode)))
+
+(add-hook 'emacs-lisp-mode-hook #'rainbow-mode)
+
+(setq marginalia-annotators
+      '(marginalia-annotators-heavy ; Use heavy annotations
+      ;;  marginalia-annotators-light ; Fallback to light annotations
+      ;;;  nil
+      ))                        ; Disable annotations entirely
+
+(add-hook 'embark-collect-mode-hook #'marginalia-mode)
+
+;; end marginalia setup
+
+;; embark setup
+
+;;(global-unset-key (kbd "C-c C-v")) ;; Unset any existing binding for C-c C-v
+;;(global-set-key (kbd "C-c C-v") nil) ;; Declare it as a prefix key
+
+(use-package embark
+  :ensure t
+  :bind
+  (("C-b" . embark-act)     ;; Bind embark-act to C-c C-v
+   ("C-h B" . embark-bindings)) ;; Show bindings for current context
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command))
+
+;; embark setup end
+
+;; web mode setuo and emmet
+
+(use-package web-mode
+  :ensure t
+  :mode ("\\.html?\\'" . web-mode)
+  :config
+  (setq web-mode-enable-auto-closing t)
+  (setq web-mode-enable-auto-pairing t))
+
+(use-package emmet-mode
+  :ensure t
+  :hook ((web-mode css-mode html-mode) . emmet-mode)
+  :config
+  (setq emmet-expand-jsx-className? t)) ; helpful if using React/JSX
+
+(add-hook 'web-mode-hook 'emmet-mode)
+
+;; web mode swtup end
+
+;; chtgpt setup
+
+(setq chatgpt-shell-model-version "llama")
+
+(setq minibuffer-completion-confirm nil) ;; Allow arbitrary input in the minibuffer
+
+(setq completion-cycle-threshold 3) ;; Allows cycling through candidates with TAB
+(define-key minibuffer-local-completion-map (kbd "TAB") 'minibuffer-complete)
+
+;; Initialize the package system if not already done
+(package-initialize)
+
+;; Refresh package contents if not already downloaded
+(unless package-archive-contents
+  (package-refresh-contents))
+
+(set-face-attribute 'default nil :height 140)
+(setq mac-option-modifier 'meta)
+(setq mac-right-option-modifier 'none) ;; right option functions normaly on mac 
+
+(auto-save-mode -1)
+(setq-default make-backup-files nil)
+(setq-default auto-save-default nil)
+(setq-default auto-save-interval -1)
+
+(setq blink-matching-paren nil)
+
+;; (setq completion-auto-help nil)
+
+(setq completion-styles '(flex))
+
+(setq minibuffer-completion-confirm nil)
+
+(setq completion-auto-help nil)
+
+(require 'org-tempo)
+(require 'org)
+
+(defconst query "global-set-key [")
+(defconst path "~/.emacs")
+
+(setq re "--color=auto -nH 'global-set-key' ~/.emacs")
+
+(setq dired-listing-switches "-ah")
+
+(setq org-log-done t)
+
+(defun custom-dired-du-size ()
+  "Show total size of marked files in human-readable units (KB/MB/GB)."
+  (interactive)
+  (let ((files (dired-get-marked-files)))
+    (with-temp-buffer
+      (apply #'call-process "du" nil t nil "-ch" files)
+      (message "%s" (car (last (split-string (buffer-string) "\n" t)))))))
+
+;; Bind it inside dired
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "z") 'custom-dired-du-size))
+
+(use-package dired-du
+  :ensure t
+  :hook (dired-mode . dired-du-mode)
+  :config
+  (setq dired-du-size-format t)) ;; human-readable sizes (KB, MB, GB)
+
+;; org mode setup
+
+(custom-set-faces
+ '(org-level-1 ((t (:foreground "black" :weight bold :height 1.3 :family "Arial"))))
+ '(org-level-2 ((t (:foreground "darkblue" :weight bold :height 1.2 :family "Courier"))))
+ '(org-level-3 ((t (:foreground "navyblue" :weight normal :height 1.2 :family "Helvetica"))))
+ '(org-level-4 ((t (:foreground "darkgrey" :weight normal :height 1.1 :family "Helvetica")))))
+
+(setq org-latex-packages-alist
+      '(("T2A" "fontenc" t)
+        ("" "inputenc" t)
+        ("" "babel" t)))
+
+(setq org-export-default-directory "~/Dropbox/prog/emacs/orgdocs/exports/")
+
+;; org mode end setup
+
+(add-to-list 'exec-path "/Library/TeX/texbin/pdflatex")
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (exec-path-from-shell-initialize))
+
+(require 'which-key)
+(which-key-mode) ;; Enable which-key mode
+
+(add-to-list 'Info-default-directory-list "/usr/share/info/")
+
+(setq browse-url-browser-function 'browse-url-chrome)
+
+(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+
+(defvar jf-emacs (make-sparse-keymap)
+  "custom keymap emacs.")
+
+(defvar vuejs-map (make-sparse-keymap)
+  "custom keymap for vuejs")
+
+(defvar ha-map (make-sparse-keymap)
+  "custom keymap for vuejs")
+
+(defvar term-map (make-sparse-keymap)
+  "custom keymap for terminal")
+
+;; (add-hook 'emacs-startup-hook #'listkeybinds)
+
+;; (run-at-time "1 sec" nil #'show-custom-global-keys)
+
+(use-package utop
+  :ensure t
+  :hook ((tuareg-mode caml-mode) . utop-minor-mode)
+  :config
+  (setq utop-command "opam exec -- utop -emacs"))
+
+(use-package clojure-mode
+  :ensure t)
+
+(use-package cider
+  :ensure t
+  :hook ((clojure-mode . cider-mode))
+  :config
+  ;; Remove the theme-adapting advice to prevent enable-theme errors
+  (advice-remove 'enable-theme #'cider--docview-adapt-to-theme)
+  (advice-remove 'enable-theme #'cider--stacktrace-adapt-to-theme))
+
+(condition-case err
+    (load-theme 'custom-dark t)
+  (error (message "Theme load error: %s" err)))
+
+;;(add-hook 'emacs-startup-hook
+;;          (lambda ()
+;;            (listkeybinds)
+;;            (run-at-time "0.5 sec" nil #'show-custom-global-keys)))
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (dired "~/Dropbox/prog")
+            (split-window-right)
+            (other-window 1)
+            (dired "~/Dropbox/prog/web")))
+
+(defun cut-to-register (register start end)
+  "Cut (kill) text between START and END into REGISTER."
+  (interactive "cCut to register: \nr")
+  (copy-to-register register start end t))  ;; `t` means delete instead of copy
+
+(global-set-key (kbd "C-p") 'copy-line-below)
+(global-set-key (kbd "M-<f1>") 'copy-word-below)
+(global-set-key (kbd "M-<f2>") 'rwebmode)
+(global-set-key (kbd "<M-S-f2>") 'web-mode-element-close)
+(global-set-key (kbd "<M-f3>") 'selecttemplates)
+(global-set-key (kbd "<M-S-f3>") 'list-colors-display)
+(global-set-key (kbd "<M-f4>") 'listkeybinds)
+(global-set-key (kbd "<M-S-f4>") 'killdirs)
+(global-set-key (kbd "<M-f5>") 'insert-vue-sfc-skeleton)
+(global-set-key (kbd "<M-f6>") 'eval-last-sexp)
+(global-set-key (kbd "<M-S-f7>") 'ctimedate)
+
+(define-key global-map (kbd "C-c e") jf-emacs)
+(define-key global-map (kbd "C-c v") vuejs-map)
+(define-key global-map (kbd "C-c f") ha-map)
+(define-key global-map (kbd "C-c t") term-map)
+;;(define-key global-map (kbd "C-c h") html-map)
+
+(define-key jf-emacs (kbd "b") 'my-bookmark-files-by-extension)
+(define-key jf-emacs (kbd "d") 'my-display-color-sequence)
+(define-key jf-emacs (kbd "f") 'search-files-by-regex)
+(define-key jf-emacs (kbd "c") 'show-custom-global-keys)
+
+(define-key vuejs-map (kbd "t") 'load-vuetemplate)
+
+(define-key ha-map (kbd "b") 'get-haskell-scratch)
+(define-key ha-map (kbd "s") 'haskell-send-region-to-vterm)
+
+;;(define-key html-map (kbd "f 1") 'html-insert-form1)
+
+(define-key term-map (kbd "t") 'eat)
+
+;;(global-set-key (kbd "C-å") 'custb)
+(global-set-key (kbd "C-f") 'grep)
+(global-set-key (kbd "M-1") 'dropprog)
+(global-set-key (kbd "M-a") 'list-last-minibuffer-commands)
+(global-set-key (kbd "M-2") 'dropweb)
+(global-set-key (kbd "M-3") 'dropdoc)
+(global-set-key (kbd "M-s") 'cu-jump-to-function)
+(global-set-key (kbd "M-4") 'info)
+(global-set-key (kbd "M-5") 'cgrep3)
+(global-set-key (kbd "M-6") 'describe-bindings)
+(global-set-key (kbd "M-7") 'ielm)
+(global-set-key (kbd "M-8") 'copy-lines-below)
+(global-set-key (kbd "M-9") 'copy-region-below)
+(global-set-key (kbd "M-0") 'org-info)
+(global-set-key (kbd "M-o M-e") 'org-entities-help)
+(global-set-key (kbd "M-o M-i") 'toggle-input-method)
+(global-set-key (kbd "M-o M-s") 'set-input-method)
+(global-set-key (kbd "M-o M-d") 'describe-input-method)
+(global-set-key (kbd "M-o M-t") 'org-table-create-or-convert-from-region)
+(global-set-key (kbd "M-o M-l") 'find-library)
+(global-set-key (kbd "M-o M-n") 'Info-search)
+(global-set-key (kbd "M-o M-p") 'export-installed-packages-to-org)
+(global-set-key (kbd "M-o M-a") 'insert-org-html-export-block)
+(global-set-key (kbd "M-o M-b") 'org-bulletify-region)
+(global-set-key (kbd "M-o M-c") 'org-load-template)
+(global-set-key (kbd "M-o M-v") 'org-load-template-vue)
+(global-set-key (kbd "M-o M-w") 'alpinetemplate)
+(global-set-key (kbd "M-o M-h") 'my-org-export-to-custom-html)
+(global-set-key (kbd "M-o M-u") 'my-org-export-to-vue-html)
+(global-set-key (kbd "C-c r") (lambda () (interactive) (set-input-method "russian-computer")))
+(global-set-key (kbd "C-c C-r") 'elixir-repl)
+(global-set-key (kbd "C-c C-c C-t") 'alpinetemplate)
+
+;;(global-set-key (kbd "M-o M-h") ')
+;;(global-set-key (kbd "C-b") 'embark-act)
+
+(global-set-key [f1] 'save-buffer)
+(global-set-key [C-f1] 'crux-rename-file-and-buffer)
+(global-set-key [f2] 'other-window)
+(global-set-key [C-f2] 'emacs-index-search)
+(global-set-key [S-f2] 'grep)
+(global-set-key [f3] 'comment-region)
+(global-set-key [C-f3] 'uncomment-region)
+(global-set-key [f4] 'bookmark-set)
+(global-set-key [C-f4] 'bookmark-jump)
+(global-set-key [S-f4] 'list-bookmarks)
+(global-set-key [f5] 'my-grep4)
+(global-set-key [C-f5] 'filesearch)
+(global-set-key [S-f5] 'rgc)
+(global-set-key [f6] 'kill-buffer)
+(global-set-key [C-f6] 'kill-some-buffers)
+(global-set-key [S-f6] 'crux-kill-other-buffers)
+(global-set-key [f7] 'find-file)
+(global-set-key [C-f7] (lambda () (interactive) (load-file "~/.emacs")))
+(global-set-key [S-f7] (lambda () (interactive) (find-file "~/.emacs")))
+(global-set-key [f8] 'copy-to-register)
+(global-set-key [C-f8] #'cut-to-register)
+(global-set-key [S-f8] 'insert-register)
+(global-set-key [f9] 'undo)
+(global-set-key [C-f9] 'describe-key)
+(global-set-key [S-f9] 'describe-function)
+(global-set-key [f10] 'search-and-replace-current-dir)
+(global-set-key [S-f10] 'search-and-replace)
+(global-set-key [C-f10] 'customize-themes)
+(global-set-key [C-f11] 'text-scale-increase)
+(global-set-key [C-f12] 'text-scale-decrease)
+;;(global-set-key [C-u C-i] 'ielm)
+
+(global-set-key (kbd "C-d") (lambda () (interactive) (execute-kbd-macro (kbd "C-s def RET"))))
+;;(global-set-key (kbd "<tab>") 'tab-next)
+;;(global-set-key (kbd "<backtab>") 'tab-previous)
+
+(defvar my-themes '(modus-operandi-deuteranopia modus-vivendi doom-dracula doom-one)
+  "List of themes to cycle through.")
+
+(defvar my-current-theme nil
+  "Currently active theme.")
+
+(defun my-cycle-theme ()
+  "Cycle through a list of themes in `my-themes`."
+  (interactive)
+  (when my-current-theme
+    (disable-theme my-current-theme))
+  (setq my-current-theme
+        (or (cadr (member my-current-theme my-themes))
+            (car my-themes)))
+  (load-theme my-current-theme t)
+  (message "Switched to theme: %s" my-current-theme))
+
+;; Example keybinding
+(global-set-key (kbd "C-c x") #'my-cycle-theme)
+
+;; Add your custom theme directory
+(add-to-list 'custom-theme-load-path "~/Dropbox/prog/emacs/themes/")
+
+;; Load your theme
+(load-theme 'custom-dark t)
+
+ '(custom-safe-themes
+   '("4c16a8be2f20a68f0b63979722676a176c4f77e2216cc8fe0ea200f597ceb22e" "856bf0048f0e6cf6e1e3eba8b3ba6467ac1bc6f9d6855f43042cc90443fe8727" "29a073e66535bad18e11e9bcaa17d7f2d17e4c79f01023e59e9841633915c232" "587ce9a1a961792114991fd488ef9c3fc37f165f6fea8b89d155640e81d165a3" "0013cec68d42e640266e700c09ea4eb55e18668f72da7a5b92f0c22b80581204" "8a3d04fd24afde8333c1437a3ecaa616f121554041a4e7e48f21b28f13b50246" "6755a9491a6287586f3c2e57e0fc7411afab62e10a1401fc88147ec06317eafe" "87b82caf3ade09282779733fb6de999d683caf4a67a1abbee8b8c8018a8d9a6b" "2b36236a9d02c9041efa7749d49cfbf6f55bb0a6674fae43f78a81367490e535" "fb7595c9571f2bd41635745d12551f35322296b70330056ddd0020ab2374671c" "9d29a302302cce971d988eb51bd17c1d2be6cd68305710446f658958c0640f68" "f4d1b183465f2d29b7a2e9dbe87ccc20598e79738e5d29fc52ec8fb8c576fcfd" "a7babb103db34c1a37f575cf2d97379b24c316699263c8935fcd9cc3b1bdc5df" "498ce788d0564d1effb7fbd8d83c7bf636178e4ad63afa7e05d84e68503dda38" "308ead333d5dfc7d64258a9d3d46f9e479e4b62bdf33a8ea8700423842cae32e" "cfb9139155392ffe48beba2f76e8b9a93a79729a3cd18feac428746c05f2dbd0" "b0fea725c1b6e74d1de532f3905b8ef46071f9e15940732223fc696438fee96f" "72f39878267871f98a77c1dd0b859bedfa10493c4d757549c64ae422f659b2e5" "4a44a5980f9aa2161582c990bb4d67a69517a055d1556d5ac21975835ede694a" "47fcd823a849d7e527f582c9e7c6af2aecd5ff12e67a14da5d5fe69853a6f573" "2e73ff29e0c8cafa854837c04e0de50ccc17ea5e5db0767cd2b5ee7707322b05" "800c29594ff735cadd9c93d1d5d25445e8228925c4f1149ee2d48d8b687fa5d7" "7b599b6957c7b50bdb7b2595d9bed7ae1926937129201f55e0b3909808ba8afe" "fc5c5ec472d1a97e99bf294efdae866827ff78692530038e4df7b6dfe633263d" "8b4af9cacdaaf0a85e968abb2111f563cf82a16a005b7fac6f6026cc5d13bd10" "9d5124bef86c2348d7d4774ca384ae7b6027ff7f6eb3c401378e298ce605f83a" "df6dfd55673f40364b1970440f0b0cb8ba7149282cf415b81aaad2d98b0f0290" "310247a1a29f930c02fe0d29aa76c0303d221d7df775de52d5c4fdc6c4f054f6" "24b6ade0e3cabdfee9fa487961b089d059e048d77fe13137ea4788c1b62bd99d" "84983940f699e6b4f3b8f86f7a42745957190ecfbef231ab49dc6c8cf97356c8" "6f1f6a1a3cff62cc860ad6e787151b9b8599f4471d40ed746ea2819fcd184e1a" "8b148cf8154d34917dfc794b5d0fe65f21e9155977a36a5985f89c09a9669aa0" "02d422e5b99f54bd4516d4157060b874d14552fe613ea7047c4a5cfa1288cf4f" "c1d5759fcb18b20fd95357dcd63ff90780283b14023422765d531330a3d3cec2" "a9eeab09d61fef94084a95f82557e147d9630fbbb82a837f971f83e66e21e5ad" "da75eceab6bea9298e04ce5b4b07349f8c02da305734f7c0c8c6af7b5eaa9738" "2721b06afaf1769ef63f942bf3e977f208f517b187f2526f0e57c1bd4a000350" "9f297216c88ca3f47e5f10f8bd884ab24ac5bc9d884f0f23589b0a46a608fe14" "6a5584ee8de384f2d8b1a1c30ed5b8af1d00adcbdcd70ba1967898c265878acf" "10e5d4cc0f67ed5cafac0f4252093d2119ee8b8cb449e7053273453c1a1eb7cc" "daf189a2af425e9f376ddb9e99627e9d8f2ebdd5cc795065da81633f88389b4b" "39054dbdf1e3f5b36e91db507f86b4c709bc2bc99fbe5e2ffc600891261f50cd" "622df781877694637a1ee23272d147bd395dfbfbc58842bec2683d4f49a0ae38" "adfd86d3c3f4a1659e11d70106a55d1ed0aed6c0d5b382febf0aeceea88abc54" "f64189544da6f16bab285747d04a92bd57c7e7813d8c24c30f382f087d460a33" "0c83e0b50946e39e237769ad368a08f2cd1c854ccbcd1a01d39fdce4d6f86478" "c8b3d9364302b16318e0f231981e94cbe4806cb5cde5732c3e5c3e05e1472434" "48042425e84cd92184837e01d0b4fe9f912d875c43021c3bcb7eeb51f1be5710" "691d671429fa6c6d73098fc6ff05d4a14a323ea0a18787daeb93fde0e48ab18b" "dccf4a8f1aaf5f24d2ab63af1aa75fd9d535c83377f8e26380162e888be0c6a9" "4e2e42e9306813763e2e62f115da71b485458a36e8b4c24e17a2168c45c9cf9d" "53f32cec91beb4ef88bd2a796718c41c3c21ebf19a23fa823de712b9f72941ff" "75eef60308d7328ed14fa27002e85de255c2342e73275173a14ed3aa1643d545" "8d820dc0b48dae30f0a76629665fc81f3d7dd150c008f48d8533646ba80188de" "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e" "56044c5a9cc45b6ec45c0eb28df100d3f0a576f18eef33ff8ff5d32bac2d9700" "ff24d14f5f7d355f47d53fd016565ed128bf3af30eb7ce8cae307ee4fe7f3fd0" "7c28419e963b04bf7ad14f3d8f6655c078de75e4944843ef9522dbecfcd8717d" "13096a9a6e75c7330c1bc500f30a8f4407bd618431c94aeab55c9855731a95e1" "6f96a9ece5fdd0d3e04daea6aa63e13be26b48717820aa7b5889c602764cf23a" "428482a4362bf1001cc36d52fb4b3c2241054c2ac7e0065608acbee27148a76b" "58626f1440fa73697c65cf13fc88255c2709be81418485c00bc46266f6d279d6" "4ca189ec428ea570030ade44944003e052a8173cd316c5a891f01e7348bc72bc" "7a778b45d321cf3340b3d762275e2c53be15445d7c753f19a6284c0974e7feeb" "f5bf1adb45632aad5eb2c627a82ddfe6d034bdd4c1777cf8f1967e3b6b1641ec" "9ddf168f587b3e30e8e655f81fb0b8ed30fdb3e16217861e123fc9a62e9830e5" "882001d4237dfe3e84ceeeee697a0da77719c9ab4e85eca7bb43541815d458fc" "3d9512412d5874972f9142a6c230258e33ff1168d1d21aa68d7a568f328a400b" "711df73c2d73a038f3e4f9327fa96244f6b081a0ef631fafdc5d3a859d7257b7" "928d362455fcd7f6d333fee8778c672c83b42ac1f3c3cbd98f027097effd6263" "2a18c72c1eb550e3de7c1c77734c9a6c71c3077db4165bf50571051c30f45e10" "c43ad2492e064eb70e0e8cf1d073c9176037e321f0fde51df1d25150dbf51d19" "f756b074a9c12bd01cdc652aae731ec6dc219d1875893e9badbd7a856714d7da" "b15bf9cabdd891f0c163d1b914e901d0d9f8f74ad4075b2b8e68a8f35247f82b" "5d205766ba4c831730cf88aaba6fa76cd77af631f8572cd85b661766f25fd206" "8970a9dac879f60eee389caed568e9e3430a577604126de1540af5c41f5aaa60" "3f106811a7502dcca1b7b54686d3fafb2210cb9e27a8b5acbb71b8987a58fe60" "28b9703810da2df6fb8667b681cea47d6fbfa5df6a7f23d5dee41d25acca38ba" "bb8587d7e8ba2a39fcd293498140598188c7bd0c8be0360cca36f08c2b7bf5d9" "dcef0e393f5daa5816162e2b873189f921f75b5dbcfb60967005571d8cafe4c4" "54a07e4250791390837b3b30289c49b4972cdf350fb12e6430715fc97087caf4" "004f174754c688f358fa2afc4f8699b5db647fbfaa0d6b55ff39f63e05bfbbf5" "5a548c9d5a6ca78d13283ed709bddf3307b65a7695e1b2e2b7e0a9dde45e8599" "76bc704df9cefb5273e818e2b73ae080eeae49648c9d41091fcc87ca577f8c71" "4f5210a77c5a568681f7f14a969fcffbbb0b88069c2e9a06e8ba9a85556ac587" "d1d0bd3d8be9acb87bbdcd1ed3f8d2597403db3f53a9d79560e0213d20b8d780" "b9476e7046307b57f20f5e06a466d04559fb59124d041a58a1caba8ee16cb08d" "c102cebd9d89fd6d1b8148112baffe9568fcf7253526b2a33d1035c9c4e506a0" "92c2f0964f55d391b2a5afdb988fe3437346b830c77d171e1005496b004b7291" "4e260b8e1da458ba65e71ac0773f4e290e263a66cf79527bedffb61d85dfc4a0" "387f701b4e03c1628b2f193259f8c5b02c15e04d803e144c154ace1f8384909f" "6e2ced785017da31e8da8dbcbb9e69beda4c3b87dd9ad2b1bb5da9f19240ec31" "dea106ab256a8017a325f51f01b1131915989fa25db48eb831ffb18dac8ecd39" "6ac2faf17d4d37b6f4bc08203b70e82f4b3b5ce76f102fb4802b3f6c74460743" "12fd37b8dc24e20343b2cf7f94e15f8775a4d1d16db4af7e44f922e6567edae7" "09b833239444ac3230f591e35e3c28a4d78f1556b107bafe0eb32b5977204d93" "1f292969fc19ba45fbc6542ed54e58ab5ad3dbe41b70d8cb2d1f85c22d07e518" "81f53ee9ddd3f8559f94c127c9327d578e264c574cda7c6d9daddaec226f87bb" "c5878086e65614424a84ad5c758b07e9edcf4c513e08a1c5b1533f313d1b17f1" "e14884c30d875c64f6a9cdd68fe87ef94385550cab4890182197b95d53a7cf40" "7ec8fd456c0c117c99e3a3b16aaf09ed3fb91879f6601b1ea0eeaee9c6def5d9" "b0391e3cd4097e7a7a235bec7ce3a1c4e7c79339b92fe65cecca20fcf494bd0f" "853a614b56bd778cd5a94e7add9d4ceef06203923b4e1192186eb69a6829bc6a" "79b922b0d10d379c8d0e8db0f05f0eec98ed4a50cb7e199c97b0369d19e89d49" "63184b70451ce1eb3b6d09969a1f990f68e0ec1bfdd07f94ba453ac9096008ee" "a40703f9d1adb7ee1500d3c33ac4d62144675505ae7fe98b18a5d9ff325ee369" "c99bd5c62008a38af64a198d1b511509895c83ac45bb90ea8fed82f0e906ecd1" "7dd0d52008c74610c4ae8f539246d18b5db3cca9463fd4b186bdcd1e8a7782a8" "aab08128c97e08edaad475d07151a6d2371d90ecc4e8935d2cdb519674a00117" "4e5cf37c8d742ed298e996dcebc6281e42d64974a7f40f73c73720fb83b16139" "5a7990a71b49e85e8bc496add7162173af541cd331d1054284a75abad9b232be" "1cfbec19edafb831c7729be2f6454ec019c21b9a54b39b3bb5ec276a6b21d484" "eefcd8b230d50a439ae653a89c5d0ec02e7d6929fc301e5af9def6791604fef2" "9f39afd4c4a270b3eddc018b1cd8bec67b738baa864329d65e095f3870024944" "4bc81db882f65e7fad8fdadb6ce3bbc4447667258174347ab4a0e88768af661b" "eb84dd5afbf9a2f534f79e55508cb3b14bb629f91f5b5a39677bacbf50f90bf6" "4ca2b8e7ce031be552d1e896f82607af064ac4abe402868dff98759f5970e2b4" "4f1e4cadfd4f998cc23338246bae383a0d3a99a5edea9bcf26922ef054671299" "075ebf0443b362beac7da83995a6af1cf30c1591502d22b32903e7cb4a854831" "e14991397ba1341f1240216392f48889a343506b1f9c8e9c37ed391151f87463" "cbd85ab34afb47003fa7f814a462c24affb1de81ebf172b78cb4e65186ba59d2" "d0fd069415ef23ccc21ccb0e54d93bdbb996a6cce48ffce7f810826bb243502c" "ffba0482d3548c9494e84c1324d527f73ea4e43fff8dfd0e48faa8fc6d5c2bc7" "8f5b54bf6a36fe1c138219960dd324aad8ab1f62f543bed73ef5ad60956e36ae" "f9d39ae3cc03cda8a80c8487eb3a1d20bc8100c57da16c0fbc946fff13e14b12" "95b51aab1acd95ebcc7f47a60dd02d1a6b4b2c4aa68027b6d4138c2f70c583ae" "a68ec832444ed19b83703c829e60222c9cfad7186b7aea5fd794b79be54146e6" "f1c8202c772d1de83eda4765fe21429a528a4fb350a28394d3705fe9678ed1f9" "ad7d874d137291e09fe2963babc33d381d087fa14928cb9d34350b67b6556b6d" "66678319ba8c4748f95ef7bd4014ad034edbc4fd2c3ca0a52c0bcd1ab8b910f3" "d3e76a24fbdb051ea1ac68c7e8483c8eaf15f15aa90fe38093924cf01f799bf7" "377bf88f6a5c5085bccdd96beeade170a55df7944e9768f1108ada15d4e71e02" "855b8dee99b96b726a57790eb904544c623cb39caa0846c8afc008d6ee48aec1" "c3da4bc9704db159e601c727fe9c33945147749205bb4536ad11fb883faa96f9" "2f1157e7e30f85eb730a2d2c122b66491d48d32f6c92068970824d05b117ecad" "6ed98f47da7556a8ce6280346e5d8e1e25bede71dc5186aa2654b93bec42d2a6" "92ef141d05dc078cfaae83a4d87d7d3ddbe7b30591e63ba19a57d1d35f9ab23f" "0deba21a79a993751cf1aa89e4d52feee50142e75f913088b3d8c20d000821e0" "62f788d40caee9e8676257b58e364bbcdedad98f366f97b44e2fb7ab2f4ba652" "bd17d0f6495c2626c493322ff37c64dc76ddb06c10dbadfead6a4f92775f00f3" "7bf34d114ec815e05a1ecb7f1acfd61ef453bfd27d12cc4c2babfa08ca1314da" "9cda0155ffd0cddac60729f5e821ba7955e1623ec7bcb12ca8e7219c33747e0f" "c8863bf29722cf36c5d293ac723fe9698e16f778326d791516dd717951ea8cd6" "aad354ecde2ba0f811443573c9e6b8a45cd4a1d413cfbe7e3766b7598359a68e" "4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d" "e1f4f0158cd5a01a9d96f1f7cdcca8d6724d7d33267623cc433fe1c196848554" "4b6cc3b60871e2f4f9a026a5c86df27905fb1b0e96277ff18a76a39ca53b82e1" "d6b934330450d9de1112cbb7617eaf929244d192c4ffb1b9e6b63ad574784aad" "26bd74f80bb7a869de3bf5521a227329cf34cfe2cd2446e421a7f5832e899b1e" "847025d7513316abf78a6a26eb785d7979d0fa891cee2dc76d519220c30d043d" "df3d4f912f543ea8455e446f23c5d4d7ce76d01776a0a7239b444d73a2fc5184" "f1b2de4bc88d1120782b0417fe97f97cc9ac7c5798282087d4d1d9290e3193bb" "aeb5508a548f1716142142095013b6317de5869418c91b16d75ce4043c35eb2b" "03eb057f2f8889d526893287f02f00f4ad4e45f565a4d94bac0a1ea7d844ec17" "1711947b59ea934e396f616b81f8be8ab98e7d57ecab649a97632339db3a3d19" "f366d4bc6d14dcac2963d45df51956b2409a15b770ec2f6d730e73ce0ca5c8a7" "b6c43bb2aea78890cf6bd4a970e6e0277d2daf0075272817ea8bb53f9c6a7f0a" "7153b82e50b6f7452b4519097f880d968a6eaf6f6ef38cc45a144958e553fbc6" "5e3fc08bcadce4c6785fc49be686a4a82a356db569f55d411258984e952f194a" "a0feb1322de9e26a4d209d1cfa236deaf64662bb604fa513cca6a057ddf0ef64" "ab04c00a7e48ad784b52f34aa6bfa1e80d0c3fcacc50e1189af3651013eb0d58" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "e7ce09ff7426c9a290d06531edc4934dd05d9ea29713f9aabff834217dbb08e4" "058ba0ed929f801fc4077617e816797654c7775382943520875642d5507d8696" "0ed3d96a506b89c1029a1ed904b11b5adcebeb2e0c16098c99c0ad95cb124729" "91c008faf603a28d026957120a5a924a3c8fff0e12331abf5e04c0e9dd310c65" "b273cc6a1d492660fff886a3cae1f00d5fd2d53b55fb374a21a14afd74fdec92" default))
+ '(package-selected-packages
+   '(vertigo ghc-imported-from ghci-completion haskell-tab-indent cape corfu scratch org-ac tramp svelte-mode plisp-mode sqlite3 commentary-theme constant-theme cycle-themes dir-treeview-themes ef-themes elegant-agenda-mode gleam-ts-mode grizzl hi2 lsp-haskell haskell-mode deadgrep find-file-rg projectile-ripgrep ripgrep abyss-theme acme-theme adwaita-dark-theme almost-mono-themes ample-zen-theme ancient-one-dark-theme arjen-grey-theme atom-dark-theme atom-one-dark-theme autumn-light-theme ayu-theme base16-theme basic-theme berrys-theme blackboard-theme bliss-theme borland-blue-theme brutalist-theme bubbleberry-theme catppuccin-theme codex-theme dakrone-light-theme dakrone-theme doom-themes vue-html-mode vue-mode use-package orderless apropospriate-theme zenburn-theme json-mode julia-mode lua-mode org afternoon-theme ahungry-theme aircon-theme alect-themes avy marginalia anti-zenburn-theme ample-theme elixir-mode bash-completion ampc))
+ '(scroll-bar-mode nil)
+ '(tool-bar-mode nil)
+ '(tooltip-mode nil)
+
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
