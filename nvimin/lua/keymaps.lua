@@ -121,6 +121,14 @@ vim.keymap.set('v', '<leader>mt', [[:s/\v^(\S+)\s+(.+)/| \1 | \2 |/<CR>]], {
     desc = "Markdown: Convert line to table row with several words" 
 })
 
+vim.keymap.set('c', '<CR>', function()
+  -- If we are executing a search buffer command (/ or ?), append the count script
+  if vim.fn.getcmdtype() == '/' or vim.fn.getcmdtype() == '?' then
+    return '<CR>:lua print("Match " .. vim.fn.searchcount().current .. " of " .. vim.fn.searchcount().total)<CR>'
+  end
+  return '<CR>'
+end, { expr = true, desc = "Search: Auto-print count on Enter" })
+
 vim.keymap.set("n", "<leader>l", "<cmd>Lazy<CR>", { desc = "Lazy UI" })
 
 vim.keymap.set("n", "<leader>rs", vim.diagnostic.setloclist, {
