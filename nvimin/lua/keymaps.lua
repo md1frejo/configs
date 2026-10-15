@@ -111,6 +111,12 @@ vim.keymap.set("n", "<F5>", function()
     )
 end)
 
+-- Visual mode mapping for <leader>mt
+
+vim.keymap.set('v', '<leader>mt', [[:s/\v^(\S+)\s+(.+)/| \1 | \2 |/<CR>]], { 
+    desc = "Markdown: Convert line to table row" 
+})
+
 vim.keymap.set("n", "<leader>l", "<cmd>Lazy<CR>", { desc = "Lazy UI" })
 
 vim.keymap.set("n", "<leader>rs", vim.diagnostic.setloclist, {
