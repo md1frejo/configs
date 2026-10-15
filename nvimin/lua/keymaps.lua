@@ -113,8 +113,12 @@ end)
 
 -- Visual mode mapping for <leader>mt
 
+vim.keymap.set('v', '<leader>mg', [[:/s/\v^(.*)$/| \1 |/<CR>]], { 
+    desc = "Markdown: Convert line to table row with one word" 
+})
+
 vim.keymap.set('v', '<leader>mt', [[:s/\v^(\S+)\s+(.+)/| \1 | \2 |/<CR>]], { 
-    desc = "Markdown: Convert line to table row" 
+    desc = "Markdown: Convert line to table row with several words" 
 })
 
 vim.keymap.set("n", "<leader>l", "<cmd>Lazy<CR>", { desc = "Lazy UI" })
