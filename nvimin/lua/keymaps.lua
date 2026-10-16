@@ -121,6 +121,10 @@ vim.keymap.set('v', '<leader>mt', [[:s/\v^(\S+)\s+(.+)/| \1 | \2 |/<CR>]], {
     desc = "Markdown: Convert line to table row with several words" 
 })
 
+vim.keymap.set('v', '<leader>mw', [[:s/\v(\S+)/| \1/g | '<,'>s/$/ |/<CR>]], { 
+    desc = "Markdown: Convert every word into a table cell" 
+})
+
 vim.keymap.set('c', '<CR>', function()
   -- If we are executing a search buffer command (/ or ?), append the count script
   if vim.fn.getcmdtype() == '/' or vim.fn.getcmdtype() == '?' then
