@@ -78,7 +78,8 @@ vim.keymap.set("n", "K", vim.diagnostic.open_float, {
 })
 
 vim.keymap.set({"n","v"}, "ä", "/", { desc = "Visual search" })
-vim.keymap.set({"n","v"}, "å", "<cmd>:registers<CR>", { desc = "show registers" })
+vim.keymap.set({"n", "v"}, "Å", "<cmd>registers<CR>", { desc = "show registers" })
+vim.keymap.set({"n", "v"}, "å", "@", { desc = "Macro prefix (acts as @)" })
 
 -- Bind Leader + f + r to open the Snacks Recent Files picker
 vim.keymap.set("n", "<leader>fr", function() 
