@@ -23,7 +23,7 @@ local colors = {
   border      = "#30363d", -- Crisp panel borders
 
   -- Semantic syntax mapping
-  orange      = "#ff7b72", -- Keywords / Control statements
+  orange      = "#7dd0ff", -- Keywords / Control statements
   blue        = "#79c0ff", -- Variables / Fields / Parameters
   blue_bright = "#58a6ff", -- Functions / Methods / Classes
   green       = "#7ee787", -- Strings
