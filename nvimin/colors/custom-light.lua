@@ -8,7 +8,7 @@ vim.g.colors_name = "custom_light"
 -- =========================
 -- Base colors
 -- =========================
-local bg      = "#fffef6" -- FFFef6"
+local bg      = "#e0f5ff" -- FFFef6"
 local bg_alt  = "#f5f1e8"
 local sel     = "#c7e0ff"
 local fg      = "#1a1a1a"
