@@ -356,21 +356,38 @@ require("lazy").setup({
         lazy = false,
         build = ":TSUpdate",
         config = function()
-            -- Changed from 'nvim-treesitter.configs' to 'nvim-treesitter'
-            require('nvim-treesitter').setup({
-                -- Ensure these parsers are automatically installed on launch
-                ensure_installed = { "svelte", "typescript", "javascript", "html", "css", "lua" }, 
-                
-                -- Enable syntax highlighting
-                highlight = {
-                    enable = true,
-                    additional_vim_regex_highlighting = false,
-                },
+            local ts = require('nvim-treesitter')
+            
+            -- Initialize treesitter cleanly using the modern core API
+            ts.setup({
+                install_dir = vim.fn.stdpath('data') .. '/site'
+            })
+
+            -- Install parsers asynchronously using the new syntax
+            ts.install({ 
+                "svelte", 
+                "typescript", 
+                "javascript", 
+                "html", 
+                "css", 
+                "lua", 
+                "elixir", 
+                "heex", 
+                "eex" 
+            })
+
+            -- Enable native Neovim highlighting automatically when opening these files
+            vim.api.nvim_create_autocmd("FileType", {
+                pattern = { "svelte", "typescript", "javascript", "html", "css", "elixir", "heex" },
+                callback = function()
+                    pcall(vim.treesitter.start)
+                end,
             })
         end,
     },
-
     -- Telescope
+
+
     {
         "nvim-telescope/telescope.nvim",
 
