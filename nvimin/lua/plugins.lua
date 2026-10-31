@@ -352,10 +352,23 @@ require("lazy").setup({
 
     -- Treesitter
     {
-    "nvim-treesitter/nvim-treesitter",
-    lazy = false,
-    build = ":TSUpdate",
-},
+        "nvim-treesitter/nvim-treesitter",
+        lazy = false,
+        build = ":TSUpdate",
+        config = function()
+            -- Changed from 'nvim-treesitter.configs' to 'nvim-treesitter'
+            require('nvim-treesitter').setup({
+                -- Ensure these parsers are automatically installed on launch
+                ensure_installed = { "svelte", "typescript", "javascript", "html", "css", "lua" }, 
+                
+                -- Enable syntax highlighting
+                highlight = {
+                    enable = true,
+                    additional_vim_regex_highlighting = false,
+                },
+            })
+        end,
+    },
 
     -- Telescope
     {
