@@ -1,0 +1,7 @@
+git clone https://github.com/gj1118/helix.git
+cd helix
+cargo install --path helix-term --locked
+
+git clone https://github.com/gj1118/helix.git
+cd helix
+cargo install --path helix-term --locked
